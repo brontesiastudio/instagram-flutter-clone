@@ -1,10 +1,9 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:instagram_clone_flutter/resources/auth_methods.dart';
 import 'package:instagram_clone_flutter/resources/firestore_methods.dart';
 import 'package:instagram_clone_flutter/screens/login_screen.dart';
 import 'package:instagram_clone_flutter/utils/colors.dart';
+import 'package:instagram_clone_flutter/utils/mock_data.dart';
 import 'package:instagram_clone_flutter/utils/utils.dart';
 import 'package:instagram_clone_flutter/widgets/follow_button.dart';
 
@@ -35,24 +34,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
       isLoading = true;
     });
     try {
-      var userSnap = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(widget.uid)
-          .get();
+      userData = {
+        'username': mockUser.username,
+        'photoUrl': mockUser.photoUrl,
+        'bio': mockUser.bio,
+        'followers': mockUser.followers,
+        'following': mockUser.following,
+      };
 
-      // get post lENGTH
-      var postSnap = await FirebaseFirestore.instance
-          .collection('posts')
-          .where('uid', isEqualTo: FirebaseAuth.instance.currentUser!.uid)
-          .get();
-
-      postLen = postSnap.docs.length;
-      userData = userSnap.data()!;
-      followers = userSnap.data()!['followers'].length;
-      following = userSnap.data()!['following'].length;
-      isFollowing = userSnap
-          .data()!['followers']
-          .contains(FirebaseAuth.instance.currentUser!.uid);
+      postLen = mockPosts.length;
+      followers = mockUser.followers.length;
+      following = mockUser.following.length;
+      isFollowing = mockUser.followers.contains(mockUid);
       setState(() {});
     } catch (e) {
       showSnackBar(
@@ -112,8 +105,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceEvenly,
                                   children: [
-                                    FirebaseAuth.instance.currentUser!.uid ==
-                                            widget.uid
+                                    mockUid == widget.uid
                                         ? FollowButton(
                                             text: 'Sign Out',
                                             backgroundColor:
@@ -142,8 +134,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                                 function: () async {
                                                   await FireStoreMethods()
                                                       .followUser(
-                                                    FirebaseAuth.instance
-                                                        .currentUser!.uid,
+                                                    mockUid,
                                                     userData['uid'],
                                                   );
 
@@ -161,8 +152,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                                 function: () async {
                                                   await FireStoreMethods()
                                                       .followUser(
-                                                    FirebaseAuth.instance
-                                                        .currentUser!.uid,
+                                                    mockUid,
                                                     userData['uid'],
                                                   );
 
@@ -205,20 +195,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 const Divider(),
                 FutureBuilder(
-                  future: FirebaseFirestore.instance
-                      .collection('posts')
-                      .where('uid', isEqualTo: widget.uid)
-                      .get(),
+                  future: Future.value(mockPosts),
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
                       return const Center(
                         child: CircularProgressIndicator(),
                       );
                     }
+                    final List mockForUser = (snapshot.data! as List)
+                        .where((p) => p['uid'] == widget.uid)
+                        .toList();
 
                     return GridView.builder(
                       shrinkWrap: true,
-                      itemCount: (snapshot.data! as dynamic).docs.length,
+                      itemCount: mockForUser.length,
                       gridDelegate:
                           const SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: 3,
@@ -227,8 +217,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         childAspectRatio: 1,
                       ),
                       itemBuilder: (context, index) {
-                        DocumentSnapshot snap =
-                            (snapshot.data! as dynamic).docs[index];
+                        var snap = mockForUser[index];
 
                         return SizedBox(
                           child: Image(

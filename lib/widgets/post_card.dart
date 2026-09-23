@@ -1,4 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:instagram_clone_flutter/models/user.dart' as model;
 import 'package:instagram_clone_flutter/providers/user_provider.dart';
@@ -25,28 +24,19 @@ class PostCard extends StatefulWidget {
 class _PostCardState extends State<PostCard> {
   int commentLen = 0;
   bool isLikeAnimating = false;
+  bool _liked = false;
 
   @override
   void initState() {
     super.initState();
+    _liked = widget.snap['likes'].contains(widget.snap['uid']);
     fetchCommentLen();
   }
 
   fetchCommentLen() async {
-    try {
-      QuerySnapshot snap = await FirebaseFirestore.instance
-          .collection('posts')
-          .doc(widget.snap['postId'])
-          .collection('comments')
-          .get();
-      commentLen = snap.docs.length;
-    } catch (err) {
-      showSnackBar(
-        context,
-        err.toString(),
-      );
-    }
-    setState(() {});
+    setState(() {
+      commentLen = 0;
+    });
   }
 
   deletePost(String postId) async {
@@ -158,12 +148,8 @@ class _PostCardState extends State<PostCard> {
           // IMAGE SECTION OF THE POST
           GestureDetector(
             onDoubleTap: () {
-              FireStoreMethods().likePost(
-                widget.snap['postId'].toString(),
-                user.uid,
-                widget.snap['likes'],
-              );
               setState(() {
+                _liked = true;
                 isLikeAnimating = true;
               });
             },
@@ -205,10 +191,10 @@ class _PostCardState extends State<PostCard> {
           Row(
             children: <Widget>[
               LikeAnimation(
-                isAnimating: widget.snap['likes'].contains(user.uid),
+                isAnimating: _liked,
                 smallLike: true,
                 child: IconButton(
-                  icon: widget.snap['likes'].contains(user.uid)
+                  icon: _liked
                       ? const Icon(
                           Icons.favorite,
                           color: Colors.red,
@@ -216,11 +202,11 @@ class _PostCardState extends State<PostCard> {
                       : const Icon(
                           Icons.favorite_border,
                         ),
-                  onPressed: () => FireStoreMethods().likePost(
-                    widget.snap['postId'].toString(),
-                    user.uid,
-                    widget.snap['likes'],
-                  ),
+                  onPressed: () {
+                    setState(() {
+                      _liked = !_liked;
+                    });
+                  },
                 ),
               ),
               IconButton(

@@ -1,8 +1,8 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:instagram_clone_flutter/screens/profile_screen.dart';
 import 'package:instagram_clone_flutter/utils/colors.dart';
+import 'package:instagram_clone_flutter/utils/mock_data.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({Key? key}) : super(key: key);
@@ -34,70 +34,43 @@ class _SearchScreenState extends State<SearchScreen> {
         ),
       ),
       body: isShowUsers
-          ? FutureBuilder(
-              future: FirebaseFirestore.instance
-                  .collection('users')
-                  .where(
-                    'username',
-                    isGreaterThanOrEqualTo: searchController.text,
-                  )
-                  .get(),
-              builder: (context, snapshot) {
-                if (!snapshot.hasData) {
-                  return const Center(
-                    child: CircularProgressIndicator(),
-                  );
-                }
-                return ListView.builder(
-                  itemCount: (snapshot.data! as dynamic).docs.length,
-                  itemBuilder: (context, index) {
-                    return InkWell(
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => ProfileScreen(
-                            uid: (snapshot.data! as dynamic).docs[index]['uid'],
-                          ),
-                        ),
+          ? ListView.builder(
+              itemCount: mockPosts.length,
+              itemBuilder: (context, index) {
+                final userMap = {
+                  'uid': mockPosts[index]['uid'],
+                  'photoUrl': mockPosts[index]['profImage'],
+                  'username': mockPosts[index]['username'],
+                };
+                return InkWell(
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => ProfileScreen(
+                        uid: userMap['uid'] as String,
                       ),
-                      child: ListTile(
-                        leading: CircleAvatar(
-                          backgroundImage: NetworkImage(
-                            (snapshot.data! as dynamic).docs[index]['photoUrl'],
-                          ),
-                          radius: 16,
-                        ),
-                        title: Text(
-                          (snapshot.data! as dynamic).docs[index]['username'],
-                        ),
+                    ),
+                  ),
+                  child: ListTile(
+                    leading: CircleAvatar(
+                      backgroundImage: NetworkImage(
+                        userMap['photoUrl'] as String,
                       ),
-                    );
-                  },
+                      radius: 16,
+                    ),
+                    title: Text(userMap['username'] as String),
+                  ),
                 );
               },
             )
-          : FutureBuilder(
-              future: FirebaseFirestore.instance
-                  .collection('posts')
-                  .orderBy('datePublished')
-                  .get(),
-              builder: (context, snapshot) {
-                if (!snapshot.hasData) {
-                  return const Center(
-                    child: CircularProgressIndicator(),
-                  );
-                }
-
-                return MasonryGridView.count(
-                  crossAxisCount: 3,
-                  itemCount: (snapshot.data! as dynamic).docs.length,
-                  itemBuilder: (context, index) => Image.network(
-                    (snapshot.data! as dynamic).docs[index]['postUrl'],
-                    fit: BoxFit.cover,
-                  ),
-                  mainAxisSpacing: 8.0,
-                  crossAxisSpacing: 8.0,
-                );
-              },
+          : MasonryGridView.count(
+              crossAxisCount: 3,
+              itemCount: mockPosts.length,
+              itemBuilder: (context, index) => Image.network(
+                mockPosts[index]['postUrl'],
+                fit: BoxFit.cover,
+              ),
+              mainAxisSpacing: 8.0,
+              crossAxisSpacing: 8.0,
             ),
     );
   }
